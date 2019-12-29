@@ -385,13 +385,6 @@ walk: // Outer loop for walking the tree
 						}
 					}
 
-					unescapeValue, err := url.PathUnescape(path[:end])
-					if err != nil {
-						p[i].Value = path[:end]
-					} else {
-						p[i].Value = value
-					}
-
 					// We need to go deeper!
 					if end < len(path) {
 						if len(n.children) > 0 {
