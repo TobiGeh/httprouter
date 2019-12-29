@@ -5,6 +5,7 @@
 package httprouter
 
 import (
+	"net/url"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -347,7 +348,7 @@ walk: // Outer loop for walking the tree
 					// Nothing found.
 					// We can recommend to redirect to the same URL without a
 					// trailing slash if a leaf exists for that path.
-					tsr = (path == "/" && n.handle != nil)
+					tsr = path == "/" && n.handle != nil
 					return
 
 				}
@@ -370,10 +371,25 @@ walk: // Outer loop for walking the tree
 						// Expand slice within preallocated capacity
 						i := len(*ps)
 						*ps = (*ps)[:i+1]
+
+						var value string
+						if unescapeValue, err := url.PathUnescape(path[:end]); err == nil {
+							value = unescapeValue
+						} else {
+							value = path[:end]
+						}
+
 						(*ps)[i] = Param{
 							Key:   n.path[1:],
-							Value: path[:end],
+							Value: value,
 						}
+					}
+
+					unescapeValue, err := url.PathUnescape(path[:end])
+					if err != nil {
+						p[i].Value = path[:end]
+					} else {
+						p[i].Value = value
 					}
 
 					// We need to go deeper!
@@ -386,7 +402,7 @@ walk: // Outer loop for walking the tree
 						}
 
 						// ... but we can't
-						tsr = (len(path) == end+1)
+						tsr = len(path) == end+1
 						return
 					}
 
@@ -396,7 +412,7 @@ walk: // Outer loop for walking the tree
 						// No handle found. Check if a handle for this path + a
 						// trailing slash exists for TSR recommendation
 						n = n.children[0]
-						tsr = (n.path == "/" && n.handle != nil)
+						tsr = n.path == "/" && n.handle != nil
 					}
 
 					return
